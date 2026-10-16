@@ -1,0 +1,6 @@
+{
+  "name": "Professional Stock Management System",
+  "description": "Enterprise-grade inventory and stock management system with FIFO batch tracking, real-time alerts, barcode scanning, sales invoices, and PostgreSQL persistence.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
