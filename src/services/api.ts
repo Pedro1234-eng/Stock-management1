@@ -101,10 +101,14 @@ export const api = {
     return apiRequest<any[]>(`/api/stock?${query.toString()}`);
   },
   getProductBatches: (productId: number) => apiRequest<any[]>(`/api/stock/product/${productId}`),
-  getAllBatches: (params?: { productId?: number; activeOnly?: boolean }) => {
+  getAllBatches: (params?: { productId?: number; activeOnly?: boolean } | boolean) => {
     const query = new URLSearchParams();
-    if (params?.productId) query.set('productId', String(params.productId));
-    if (params?.activeOnly !== undefined) query.set('activeOnly', String(params.activeOnly));
+    if (typeof params === 'boolean') {
+      query.set('activeOnly', String(params));
+    } else if (params) {
+      if (params.productId) query.set('productId', String(params.productId));
+      if (params.activeOnly !== undefined) query.set('activeOnly', String(params.activeOnly));
+    }
     return apiRequest<any[]>(`/api/stock/batches?${query.toString()}`);
   },
   createStockEntry: (entry: any) =>
@@ -155,6 +159,12 @@ export const api = {
     if (startDate) query.set('startDate', startDate);
     if (endDate) query.set('endDate', endDate);
     return apiRequest<any[]>(`/api/reports/sales?${query.toString()}`);
+  },
+  getDetailedSalesItems: (startDate?: string, endDate?: string) => {
+    const query = new URLSearchParams();
+    if (startDate) query.set('startDate', startDate);
+    if (endDate) query.set('endDate', endDate);
+    return apiRequest<any[]>(`/api/reports/sales/items?${query.toString()}`);
   },
   getPurchasesReport: () => apiRequest<any[]>('/api/reports/purchases'),
   getProfitReport: (startDate?: string, endDate?: string) => {

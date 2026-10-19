@@ -634,6 +634,57 @@ router.get('/reports/sales', async (req, res) => {
   }
 });
 
+router.get('/reports/sales/items', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    let query = `
+      SELECT 
+        ii.id as item_id,
+        i.id as invoice_id,
+        i.invoice_number,
+        i.created_at as sale_date,
+        COALESCE(c.name, 'Walk-in Customer') as customer_name,
+        i.payment_method,
+        i.status as invoice_status,
+        i.created_by as operator,
+        p.id as product_id,
+        p.name as product_name,
+        p.sku,
+        p.barcode,
+        p.unit,
+        COALESCE(cat.name, 'General') as category_name,
+        ii.quantity,
+        ii.unit_price::NUMERIC(12,2) as unit_price,
+        ii.discount::NUMERIC(12,2) as discount,
+        ii.total::NUMERIC(12,2) as item_total
+      FROM invoice_items ii
+      JOIN invoices i ON ii.invoice_id = i.id
+      JOIN products p ON ii.product_id = p.id
+      LEFT JOIN categories cat ON p.category_id = cat.id
+      LEFT JOIN customers c ON i.customer_id = c.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    if (startDate && endDate) {
+      params.push(startDate, endDate);
+      query += ` AND i.created_at::DATE >= $1 AND i.created_at::DATE <= $2`;
+    }
+    query += ` ORDER BY i.created_at DESC, ii.id ASC`;
+
+    const result = await pool.query(query, params);
+    res.json(
+      result.rows.map((r: any) => ({
+        ...r,
+        unit_price: parseFloat(r.unit_price),
+        discount: parseFloat(r.discount),
+        item_total: parseFloat(r.item_total),
+      }))
+    );
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/reports/purchases', async (_req, res) => {
   try {
     const result = await pool.query(`
