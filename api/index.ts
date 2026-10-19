@@ -11,4 +11,10 @@ app.use(express.json());
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
+// Global error handler ensuring all errors return valid JSON
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('API Serverless Error:', err);
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
+});
+
 export default app;

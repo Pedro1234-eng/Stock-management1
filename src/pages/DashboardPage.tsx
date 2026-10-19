@@ -75,10 +75,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }
 
   const { metrics, categoryBreakdown, topSelling, recentMovements, salesTrend } = data;
-  const maxSale = Math.max(...salesTrend.map((s) => s.sales), 100);
+  const maxSale = Math.max(...(salesTrend || []).map((s) => s.sales || 0), 100);
 
   return (
     <div className="space-y-6">
+      {(data as any)?.dbStatus === 'offline' && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>Database is currently connecting or awaiting credentials. To connect live PostgreSQL on Vercel, ensure DATABASE_URL or POSTGRES_URL is configured in Vercel project settings.</span>
+          </div>
+          <button
+            onClick={loadDashboard}
+            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-lg font-semibold shrink-0"
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950/40 p-6 rounded-2xl border border-slate-800">
         <div>

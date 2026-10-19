@@ -9,6 +9,23 @@
     <meta property="og:description" content="Enterprise-grade inventory and stock management system with FIFO batch tracking, real-time alerts, barcode scanning, sales invoices, and PostgreSQL persistence." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Suppress Vite HMR WebSocket connection errors in Cloud Run / proxy environments
+      window.addEventListener('unhandledrejection', function (e) {
+        var msg = e && e.reason && (e.reason.message || String(e.reason));
+        if (msg && (msg.indexOf('WebSocket') !== -1 || msg.indexOf('websocket') !== -1)) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      });
+      window.addEventListener('error', function (e) {
+        var msg = e && (e.message || String(e));
+        if (msg && (msg.indexOf('WebSocket') !== -1 || msg.indexOf('websocket') !== -1)) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

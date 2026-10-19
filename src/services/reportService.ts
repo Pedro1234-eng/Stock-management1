@@ -2,10 +2,55 @@ import { pool } from '../db/index.ts';
 
 export class ReportService {
   /**
+   * Safe fallback dashboard data structure if database is warming up or unreachable
+   */
+  static getFallbackDashboardData(errorMsg?: string) {
+    const today = new Date();
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const salesTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      salesTrend.push({
+        date: d.toISOString().split('T')[0],
+        day_label: days[d.getDay()],
+        sales: 0,
+        invoice_count: 0,
+      });
+    }
+
+    return {
+      metrics: {
+        totalProducts: 0,
+        activeProducts: 0,
+        totalStockQuantity: 0,
+        inventoryValue: 0,
+        todaySales: 0,
+        todayInvoices: 0,
+        lowStockCount: 0,
+        outOfStockCount: 0,
+      },
+      categoryBreakdown: [],
+      topSelling: [],
+      recentMovements: [],
+      salesTrend,
+      dbStatus: errorMsg ? 'offline' : 'ready',
+      error: errorMsg || null,
+    };
+  }
+
+  /**
    * Complete Dashboard Overview Metrics & Charts
    */
   static async getDashboardData() {
-    const client = await pool.connect();
+    let client: any = null;
+    try {
+      client = await pool.connect();
+    } catch (connErr: any) {
+      console.warn('PostgreSQL database connection unavailable for dashboard metrics:', connErr.message);
+      return ReportService.getFallbackDashboardData(connErr.message);
+    }
+
     try {
       // 1. Total products
       const prodRes = await client.query(
@@ -99,31 +144,39 @@ export class ReportService {
 
       return {
         metrics: {
-          totalProducts: prodRes.rows[0].total_products,
-          activeProducts: prodRes.rows[0].active_products,
-          totalStockQuantity: stockRes.rows[0].total_stock_quantity,
-          inventoryValue: parseFloat(stockRes.rows[0].total_cost_value),
-          todaySales: parseFloat(todaySalesRes.rows[0].today_sales_amount),
-          todayInvoices: todaySalesRes.rows[0].today_invoices,
-          lowStockCount: stockStatusRes.rows[0].low_stock_count,
-          outOfStockCount: stockStatusRes.rows[0].out_of_stock_count,
+          totalProducts: prodRes.rows[0]?.total_products || 0,
+          activeProducts: prodRes.rows[0]?.active_products || 0,
+          totalStockQuantity: stockRes.rows[0]?.total_stock_quantity || 0,
+          inventoryValue: parseFloat(stockRes.rows[0]?.total_cost_value || '0'),
+          todaySales: parseFloat(todaySalesRes.rows[0]?.today_sales_amount || '0'),
+          todayInvoices: todaySalesRes.rows[0]?.today_invoices || 0,
+          lowStockCount: stockStatusRes.rows[0]?.low_stock_count || 0,
+          outOfStockCount: stockStatusRes.rows[0]?.out_of_stock_count || 0,
         },
         categoryBreakdown: categoryRes.rows.map((r: any) => ({
           ...r,
-          category_value: parseFloat(r.category_value),
+          category_value: parseFloat(r.category_value || '0'),
         })),
         topSelling: topSellingRes.rows.map((r: any) => ({
           ...r,
-          revenue: parseFloat(r.revenue),
+          revenue: parseFloat(r.revenue || '0'),
         })),
-        recentMovements: recentMovementsRes.rows,
+        recentMovements: recentMovementsRes.rows || [],
         salesTrend: salesTrendRes.rows.map((r: any) => ({
           ...r,
-          sales: parseFloat(r.sales),
+          sales: parseFloat(r.sales || '0'),
         })),
+        dbStatus: 'ready',
       };
+    } catch (queryErr: any) {
+      console.error('Database query failed in getDashboardData:', queryErr);
+      return ReportService.getFallbackDashboardData(queryErr.message);
     } finally {
-      client.release();
+      if (client) {
+        try {
+          client.release();
+        } catch {}
+      }
     }
   }
 

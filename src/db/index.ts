@@ -8,6 +8,7 @@ declare global {
 
 export const createPool = () => {
   if (!global._postgresPool) {
+    const timeoutMs = Number(process.env.PG_TIMEOUT_MS) || 3500;
     const poolConfig: any = process.env.SQL_HOST
       ? {
           host: process.env.SQL_HOST,
@@ -15,14 +16,16 @@ export const createPool = () => {
           password: process.env.SQL_PASSWORD,
           database: process.env.SQL_DB_NAME,
           max: 10,
-          connectionTimeoutMillis: 15000,
+          connectionTimeoutMillis: timeoutMs,
+          idleTimeoutMillis: 10000,
         }
       : (process.env.POSTGRES_URL || process.env.DATABASE_URL)
       ? {
           connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
           ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
           max: 10,
-          connectionTimeoutMillis: 15000,
+          connectionTimeoutMillis: timeoutMs,
+          idleTimeoutMillis: 10000,
         }
       : {
           host: process.env.SQL_HOST,
@@ -30,7 +33,8 @@ export const createPool = () => {
           password: process.env.SQL_PASSWORD,
           database: process.env.SQL_DB_NAME,
           max: 10,
-          connectionTimeoutMillis: 15000,
+          connectionTimeoutMillis: timeoutMs,
+          idleTimeoutMillis: 10000,
         };
 
     global._postgresPool = new Pool(poolConfig);

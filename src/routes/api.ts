@@ -598,7 +598,8 @@ router.get('/reports/dashboard', async (_req, res) => {
     const data = await ReportService.getDashboardData();
     res.json(data);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error('Failed to get dashboard data, returning fallback:', error);
+    res.json(ReportService.getFallbackDashboardData(error.message));
   }
 });
 
